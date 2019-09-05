@@ -46,25 +46,23 @@ app.get('/products', (req, res) => {
 
 app.get('/products/:id', (req, res) => {
   // return res.send(req.params.id);
-  // const productFound = produitsJSON.find(elem => { 
-  console.log('****** :' , produitsJSON.find(elem => { 
-console.log('Elem : ',elem)
+  const productFound = produitsJSON.find(elem => { 
     elem.id == parseInt(req.params.id);
-
+    
     console.log('---------------------------------')
+    console.log('Elem : ',elem)
     console.log('req.params.id : ',req.params.id);
     console.log('elem.id : ',elem.id);
-  })
-  );
-  // console.log('productFound : ',productFound) 
+  });
+  console.log('productFound : ',productFound) 
   console.log('---------------------------------')
   
 
-  // if (!productFound){
-  //   res.status(404).send('Le product demandé n\'existe pas');
-  // } else {
-    res.send('toto');
-  // }
+  if (!productFound){
+    res.status(404).send('Le product demandé n\'existe pas');
+  } else {
+    res.send(productFound);
+}
 });
 
 app.get('/products/:year/:month', (req, res) => {
