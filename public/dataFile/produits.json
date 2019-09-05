@@ -1,0 +1,18 @@
+[
+  {
+  "uuid": "03125012-cafe-f4ce-b00k-b00bs10ff1c3",
+  "id" : 0,
+  "name": "Macbook Pro 13’’",
+  "price": 1990,
+  "type": "computer",
+  "enable": true
+  },
+  {
+  "uuid": "03125012-cafe-f4ce-b00k-b00bs10ff2d4",
+  "id" : 1,
+  "name": "MSI GT73eVR 7RF Titan Pro",
+  "price": 2200,
+  "type": "computer",
+  "enable": true
+  }
+]
