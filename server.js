@@ -47,7 +47,7 @@ app.get('/products', (req, res) => {
 app.get('/products/:id', (req, res) => {
   // return res.send(req.params.id);
   const productFound = produitsJSON.find(elem => { 
-    elem.id == parseInt(req.params.id);
+    return elem.id === parseInt(req.params.id);
     
     console.log('---------------------------------')
     console.log('Elem : ',elem)
@@ -62,7 +62,7 @@ app.get('/products/:id', (req, res) => {
     res.status(404).send('Le product demandé n\'existe pas');
   } else {
     res.send(productFound);
-}
+  }
 });
 
 app.get('/products/:year/:month', (req, res) => {
