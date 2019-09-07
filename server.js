@@ -25,8 +25,7 @@ const fs          = require('fs');                            // Module permetta
 const produitsDataFile = path.join(__dirname, '/public/datafile/produits.json');  // Emplacement et nom du fichier JSON
 let produits;                                                 // Fichier-mémoire des des produits issus du Fichier JSON
 let productModified = false;                                  // Témoin de modifictaions du fichier "Produits" 
-// const refreshJSONFileInterval = 60000;                        // Délai d'interrgogation de copie du Fichier-Mémoire vers le fichier physique
-const refreshJSONFileInterval = 5000;                        // Délai d'interrgogation de copie du Fichier-Mémoire vers le fichier physique
+const refreshJSONFileInterval = 5000;                         // Délai d'interrgogation de copie du Fichier-Mémoire vers le fichier physique
 const app = express();                                        // Application Serveur API RestFul
 
 // -------------------------------------------------------------------------
