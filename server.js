@@ -16,105 +16,192 @@
 // -------------------------------------------------------------------------
 
 const express     = require('express');
-const path        = require('path');           // Module de gestion des chemins
-const fs          = require('fs');             // Module permettant de lire / ecrire des fichiers
+const path        = require('path');                          // Module de gestion des chemins
+const fs          = require('fs');                            // Module permettant de lire / ecrire des fichiers
 
 // -------------------------------------------------------------------------
-// Variables, constantes
+// Définition Variablesdes et Constantes
 // -------------------------------------------------------------------------
-let produitsJSON;         // Fichier JSON en mémoire
-const app = express();
+const produitsDataFile = path.join(__dirname, '/public/datafile/produits.json');  // Emplacement et nom du fichier JSON
+let produits;                                                 // Fichier-mémoire des des produits issus du Fichier JSON
+let productModified = false;                                  // Témoin de modifictaions du fichier "Produits" 
+// const refreshJSONFileInterval = 60000;                        // Délai d'interrgogation de copie du Fichier-Mémoire vers le fichier physique
+const refreshJSONFileInterval = 5000;                        // Délai d'interrgogation de copie du Fichier-Mémoire vers le fichier physique
+const app = express();                                        // Application Serveur API RestFul
 
 // -------------------------------------------------------------------------
 // Création de l'application ExpressJS
 // -------------------------------------------------------------------------
-
-app.use('/static', express.static(__dirname + '/public'));
-app.use('/staticNodeModules', express.static(__dirname + '/node_modules'));
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
+app.use('/static', express.static(__dirname + '/public'));    // Définition du chemin des assets
+app.use(express.json());                                      // Activation du parsing dans "Express"
 
 
-app.get('/', (req, res) => {
-  return res.send('Hello World');
-});
 
-app.get('/products', (req, res) => {
-  return res.send(Object.values(produitsJSON));
-  // return res.send(produitsJSON);
-});
 
-app.get('/products/:id', (req, res) => {
-  // return res.send(req.params.id);
-  const productFound = produitsJSON.find(elem => { 
-    elem.id == parseInt(req.params.id);
-    
-    console.log('---------------------------------')
-    console.log('Elem : ',elem)
-    console.log('req.params.id : ',req.params.id);
-    console.log('elem.id : ',elem.id);
-  });
-  console.log('productFound : ',productFound) 
-  console.log('---------------------------------')
-  
-
-  if (!productFound){
-    res.status(404).send('Le product demandé n\'existe pas');
-  } else {
-    res.send(productFound);
-}
-});
-
-app.get('/products/:year/:month', (req, res) => {
-  return res.send(req.params);
-  // return res.send(req.query);
-  // return res.status(status).send(body)
-});
-
-app.post('/products/:id', (req, res) => {
-  return res.send(produitsJSON[req.params.id-1]);
-});
-
-app.put('/products/:id', (req, res) => { 
-  return res.send(
-    `PUT HTTP method on product/${req.params.id} resource`,
-  );
-});
-
-app.delete('/products/:id', (req, res) => {
-});
-
-// app.post('/messages', (req, res) => {
-//   const id = uuidv4();
-//   const message = {
-//     id,
-//     text: req.body.text,
-//   };
-//   messages[id] = message;
-//   return res.send(message);
-// });
 
 // -------------------------------------------------------------------------
-// Chargement en asynchrone du fichier JSON en mémoire
+// -------------------------------------------------------------------------
+// API RestFul - Gestion des messages
+// -------------------------------------------------------------------------
+// -------------------------------------------------------------------------
+
+// -------------------------------------------------------------------------
+// Message initial à la connexion
+// -------------------------------------------------------------------------
+app.get('/', (req, res) => {
+  return res.send('<h1 style="color: red;">Bonjour EPSOR, <p>Ceci est le test d\'embauche pour le poste de "Full Stack Developer"</p></h1>');
+});
+// -------------------------------------------------------------------------
+// Liste des produits
+// -------------------------------------------------------------------------
+app.get('/products', (req, res) => {
+  return res.send(produits);
+});
+
+// -------------------------------------------------------------------------
+// Recherche d'un produit
+// avec contrôle de l'existance du produit
+// -------------------------------------------------------------------------
+app.get('/products/:id', (req, res) => {
+  // Si non trouvé, message d'erreur et echap
+  if (req.params.id >= produits.length ){                       
+    return res.status(404).send('Le produit demandé n\'existe pas');
+  }
+
+  res.send(produits[req.params.id]);
+});
+
+// -------------------------------------------------------------------------
+// Création d'un nouveau produit
+// avec vérification que tous les champs sont remplis
+// -------------------------------------------------------------------------
+app.post('/products', (req, res) => {
+  // Check validité de l'objet envoyé
+  if (!validateProduct(req.body)){
+    return res.status(400).send('Tous les champs du produit sont obligatoires')
+  }
+
+  // Constitution d'un objet pour le nouveau produit et ajout dans le fichier-mémoire
+  const newProduct = {
+    uuid  : req.body.uuid,
+    name  : req.body.name,
+    price : req.body.price,
+    type  : req.body.type,
+    enable: req.body.enable 
+  }
+
+  produits.push(newProduct);
+  productModified = true;
+  res.send(newProduct);
+});
+
+// -------------------------------------------------------------------------
+// MAJ d'un produit
+// avec contrôle de l'existance du produit
+// avec vérification que tous les champs sont remplis
+// -------------------------------------------------------------------------
+app.put('/products/:id', (req, res) => { 
+  // Si non trouvé, message d'erreur et echap
+  if (req.params.id >= produits.length ){                     
+    return res.status(404).send('Le produit demandé n\'existe pas');
+  }
+
+  // Check validité de l'objet envoyé
+  if (!validateProduct(req.body)){
+    return res.status(400).send('Tous les champs du produit sont obligatoires')
+  }
+
+  // MAJ de l'objet "produit" dans le fichier-mémoire
+  produits[req.params.id] = {
+    uuid  : req.body.uuid,
+    name  : req.body.name,
+    price : req.body.price,
+    type  : req.body.type,
+    enable: req.body.enable
+  }
+
+  productModified = true;
+  res.send(produits[req.params.id]);
+});
+
+// -------------------------------------------------------------------------
+// Suppression d'un produit
+// -------------------------------------------------------------------------
+app.delete('/products/:id', (req, res) => {
+  // Si non trouvé, message d'erreur et echap
+  if (req.params.id >= produits.length ){                     
+    return res.status(404).send('Le produit demandé n\'existe pas');
+  }
+
+  produits.splice(req.params.id, 1);
+  productModified = true;
+  res.send(produits[req.params.id]); 
+});
+
+// -------------------------------------------------------------------------
+// Check validité de l'objet envoyé
+// -------------------------------------------------------------------------
+function validateProduct(pProduct){
+  // Si au moins 1 champs n'est pas rempli, message d'erreur ==> False
+  if (!pProduct.uuid ||  
+      !pProduct.name ||
+      !pProduct.price ||
+      !pProduct.type ||
+      !pProduct.enable) {
+    return false
+  } else {
+    return true;
+  }
+}
+
+// -------------------------------------------------------------------------
+// Chargement du fichier JSON en mémoire
 // -------------------------------------------------------------------------
 function loadProduitsJSON(){
-  const produitsDataFile = path.join(__dirname, '/public/datafile/produits.json');
-
   fs.readFile(produitsDataFile, (err, data) => {
-    if (err) throw err;
-    produitsJSON = JSON.parse(data);
-    console.log('Produits chargés à partir du fichier JSON : ',produitsJSON);
+    if (err || data.length === 0) {                           // Si fichier JSON inexistant 
+      produits = [];                                          // Initialisation à vide du fichier-mémoire
+      console.log('Fichier "Produits" vierge');
+    } else {
+      produits = JSON.parse(data);                            // Dé-JSONification du fichier et copie en fichier-mémoire;
+      console.log('Produits chargés à partir du fichier JSON : ',produits);
+    }
   });
+}
+
+// -------------------------------------------------------------------------
+// Sauvegarde du Fichier-mémoire vers le fichier physique si témoin de modification = true
+// -------------------------------------------------------------------------
+function saveProduitsJSON(){
+  if (productModified){                                       // S'il y a eu des opérations CRUD
+    console.log('MAJ du fichier JSON')
+    const produitJSON = JSON.stringify(produits, null, 2);    // JSONification du fichier-mémoire et copie vers le fichier physique;
+
+    fs.writeFile(produitsDataFile, produitJSON, (err) => {
+      if (err) {
+        console.log('-------------------------------------------------------------');
+        console.log(`Erreur dans la fonction 'saveProduitsJSON' : ${err} lors de l'écriture de "]"`);   // Si erreur technique... Message et Plantage
+        console.log('-------------------------------------------------------------');
+        throw err;
+      } else {
+        console.log('Produits écrits dans le fichier JSON : ',produits);
+      }
+    });
+  }
 }
 
 // -------------------------------------------------------------------------
 // Création du serveur et lancement du listener
-// Chargement en mémoire du fichier JSON
+// Chargement en asynchrone en mémoire du fichier JSON (loadProduitsJSON)
 // -------------------------------------------------------------------------
 const server = app.listen(process.env.PORT || 3000, function() {
 	const addressHote = server.address().address;
 	const portEcoute = server.address().port
   console.log('Écoute du serveur http://%s:%s',addressHote,portEcoute);
   
-  loadProduitsJSON();
-}); 
+  loadProduitsJSON();                                         // Chargement du fichier en JSON en mémoire
+
+  setInterval(() => {
+    saveProduitsJSON();                                       // Tentative de sauvegarde périodique du Fichier-mémoire vers le fichier physique si témoin de modification = true
+  }, refreshJSONFileInterval);
+});
