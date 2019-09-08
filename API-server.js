@@ -25,7 +25,7 @@ const fs          = require('fs');                            // Module permetta
 const produitsDataFile = path.join(__dirname, '/public/datafile/produits.json');  // Emplacement et nom du fichier JSON
 let produits;                                                 // Fichier-mémoire des des produits issus du Fichier JSON
 let productModified = false;                                  // Témoin de modifictaions du fichier "Produits" 
-const refreshJSONFileInterval = 5000;                         // Délai d'interrogation de copie du Fichier-Mémoire vers le fichier physique
+const refreshJSONFileInterval = 60000;                        // Délai d'interrogation de copie du Fichier-Mémoire vers le fichier physique
 const app = express();                                        // Application Serveur API RestFul
 
 // -------------------------------------------------------------------------
@@ -155,7 +155,7 @@ app.delete('/products/:id', (req, res) => {
 });
 
 // -------------------------------------------------------------------------
-// Pour didacticiel (récupération des éléments de requête, et du corps du message)
+// Gardé pour didacticiel (récupération des éléments de requête, et du corps du message)
 // -------------------------------------------------------------------------
 app.get('/products/:year/:month', (req, res) => {
   return res.send(req.params);
@@ -241,3 +241,4 @@ const server = app.listen(process.env.PORT || 3000, function() {
     saveProduitsJSON();                                       // Tentative de sauvegarde périodique du Fichier-mémoire vers le fichier physique si témoin de modification = true
   }, refreshJSONFileInterval);
 });
+// easter
