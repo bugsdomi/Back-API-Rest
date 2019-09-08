@@ -25,7 +25,7 @@ const fs          = require('fs');                            // Module permetta
 const produitsDataFile = path.join(__dirname, '/public/datafile/produits.json');  // Emplacement et nom du fichier JSON
 let produits;                                                 // Fichier-mémoire des des produits issus du Fichier JSON
 let productModified = false;                                  // Témoin de modifictaions du fichier "Produits" 
-const refreshJSONFileInterval = 5000;                         // Délai d'interrgogation de copie du Fichier-Mémoire vers le fichier physique
+const refreshJSONFileInterval = 5000;                         // Délai d'interrogation de copie du Fichier-Mémoire vers le fichier physique
 const app = express();                                        // Application Serveur API RestFul
 
 // -------------------------------------------------------------------------
@@ -54,7 +54,7 @@ app.get('/', (req, res) => {
 // Liste des produits
 // -------------------------------------------------------------------------
 app.get('/products', (req, res) => {
-  return res.send(produits);
+  return res.send(Object.values(produits));
 });
 
 // -------------------------------------------------------------------------
@@ -62,12 +62,14 @@ app.get('/products', (req, res) => {
 // avec contrôle de l'existance du produit
 // -------------------------------------------------------------------------
 app.get('/products/:id', (req, res) => {
-  // Si non trouvé, message d'erreur et echap
-  if (req.params.id >= produits.length ){                       
-    return res.status(404).send('Le produit demandé n\'existe pas');
-  }
 
-  res.send(produits[req.params.id]);
+  // Si non trouvé, message d'erreur et echap
+  const produitTrouve = produits.find(produit => produit.id === parseInt(req.params.id));
+  if (!produitTrouve){
+    return res.status(404).send('Le produit demandé n\'existe pas');
+  } 
+
+  res.send(produitTrouve);
 });
 
 // -------------------------------------------------------------------------
@@ -75,6 +77,14 @@ app.get('/products/:id', (req, res) => {
 // avec vérification que tous les champs sont remplis
 // -------------------------------------------------------------------------
 app.post('/products', (req, res) => {
+
+  // Si déjà existant, message d'erreur et echap
+  const indexProduit = produits.findIndex(produit => produit.id === parseInt(req.body.id));
+  if (indexProduit !== -1){
+    return res.status(400).send('Le nouveau produit demandé existe déjà');
+  }; 
+
+
   // Check validité de l'objet envoyé
   if (!validateProduct(req.body)){
     return res.status(400).send('Tous les champs du produit sont obligatoires')
@@ -82,6 +92,7 @@ app.post('/products', (req, res) => {
 
   // Constitution d'un objet pour le nouveau produit et ajout dans le fichier-mémoire
   const newProduct = {
+    id    : req.body.id,
     uuid  : req.body.uuid,
     name  : req.body.name,
     price : req.body.price,
@@ -100,18 +111,21 @@ app.post('/products', (req, res) => {
 // avec vérification que tous les champs sont remplis
 // -------------------------------------------------------------------------
 app.put('/products/:id', (req, res) => { 
-  // Si non trouvé, message d'erreur et echap
-  if (req.params.id >= produits.length ){                     
-    return res.status(404).send('Le produit demandé n\'existe pas');
-  }
 
+  // Si non trouvé, message d'erreur et echap
+  const indexProduit = produits.findIndex(produit => produit.id === parseInt(req.params.id));
+  if (indexProduit === -1){
+    return res.status(404).send('Le produit demandé n\'existe pas');
+  }; 
+  
   // Check validité de l'objet envoyé
   if (!validateProduct(req.body)){
     return res.status(400).send('Tous les champs du produit sont obligatoires')
   }
 
   // MAJ de l'objet "produit" dans le fichier-mémoire
-  produits[req.params.id] = {
+  produits[indexProduit] = {
+    id    : req.body.id,
     uuid  : req.body.uuid,
     name  : req.body.name,
     price : req.body.price,
@@ -120,21 +134,33 @@ app.put('/products/:id', (req, res) => {
   }
 
   productModified = true;
-  res.send(produits[req.params.id]);
+  res.send(produits[indexProduit]);
 });
 
 // -------------------------------------------------------------------------
 // Suppression d'un produit
 // -------------------------------------------------------------------------
 app.delete('/products/:id', (req, res) => {
+  
   // Si non trouvé, message d'erreur et echap
-  if (req.params.id >= produits.length ){                     
+  const produitTrouve = produits.find(produit => produit.id === parseInt(req.params.id)); // Sauvegarde du produit pour le renvoyer à la fin de la fonction
+  if (!produitTrouve){
     return res.status(404).send('Le produit demandé n\'existe pas');
-  }
+  }; 
 
-  produits.splice(req.params.id, 1);
+  const index = produits.indexOf(produitTrouve);
+  produits.splice(index, 1);
   productModified = true;
-  res.send(produits[req.params.id]); 
+  res.send(produitTrouve); 
+});
+
+// -------------------------------------------------------------------------
+// Pour didacticiel (récupération des éléments de requête, et du corps du message)
+// -------------------------------------------------------------------------
+app.get('/products/:year/:month', (req, res) => {
+  return res.send(req.params);
+  // return res.send(req.query);
+  // return res.status(status).send(body)
 });
 
 // -------------------------------------------------------------------------
@@ -142,7 +168,8 @@ app.delete('/products/:id', (req, res) => {
 // -------------------------------------------------------------------------
 function validateProduct(pProduct){
   // Si au moins 1 champs n'est pas rempli, message d'erreur ==> False
-  if (!pProduct.uuid ||  
+  if (!pProduct.id ||
+      !pProduct.uuid ||  
       !pProduct.name ||
       !pProduct.price ||
       !pProduct.type ||
@@ -156,6 +183,15 @@ function validateProduct(pProduct){
 // -------------------------------------------------------------------------
 // Chargement du fichier JSON en mémoire
 // -------------------------------------------------------------------------
+function sortById(p1, p2){
+  return ((p1.id < p2.id) ? -1 
+                          : ((p1.id > p2.id)  ? 1 
+                                              : 0));
+  }
+
+// -------------------------------------------------------------------------
+// Chargement du fichier JSON en mémoire
+// -------------------------------------------------------------------------
 function loadProduitsJSON(){
   fs.readFile(produitsDataFile, (err, data) => {
     if (err || data.length === 0) {                           // Si fichier JSON inexistant 
@@ -163,7 +199,8 @@ function loadProduitsJSON(){
       console.log('Fichier "Produits" vierge');
     } else {
       produits = JSON.parse(data);                            // Dé-JSONification du fichier et copie en fichier-mémoire;
-      console.log('Produits chargés à partir du fichier JSON : ',produits);
+      produits.sort(sortById);                                // Tri sur l'Id 
+      console.log('Produits chargés à partir du fichier JSON');
     }
   });
 }
@@ -173,17 +210,17 @@ function loadProduitsJSON(){
 // -------------------------------------------------------------------------
 function saveProduitsJSON(){
   if (productModified){                                       // S'il y a eu des opérations CRUD
-    console.log('MAJ du fichier JSON')
+    produits.sort(sortById);                                  // Tri sur l'Id 
     const produitJSON = JSON.stringify(produits, null, 2);    // JSONification du fichier-mémoire et copie vers le fichier physique;
-
-    fs.writeFile(produitsDataFile, produitJSON, (err) => {
+    
+    fs.writeFile(produitsDataFile, produitJSON, (err) => {    // Ecrasement de l'ancien fichier, création d'un nouveau et sauvegarde du fichier-mémoire vers fichier physique
       if (err) {
         console.log('-------------------------------------------------------------');
         console.log(`Erreur dans la fonction 'saveProduitsJSON' : ${err} lors de l'écriture de "]"`);   // Si erreur technique... Message et Plantage
         console.log('-------------------------------------------------------------');
         throw err;
       } else {
-        console.log('Produits écrits dans le fichier JSON : ',produits);
+        console.log('Fichier JSON MAJ');
       }
     });
   }
