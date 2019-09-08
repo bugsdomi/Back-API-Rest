@@ -227,7 +227,7 @@ function saveProduitsJSON(){
 // Création du serveur et lancement du listener
 // Chargement en asynchrone en mémoire du fichier JSON (loadProduitsJSON)
 // -------------------------------------------------------------------------
-const server = app.listen(process.env.PORT || 3000, function() {
+const server = app.listen(process.env.PORT || 3005, function() {
 	const addressHote = server.address().address;
 	const portEcoute = server.address().port
   console.log('Écoute du serveur http://%s:%s',addressHote,portEcoute);
