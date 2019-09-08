@@ -220,6 +220,7 @@ function saveProduitsJSON(){
         console.log('-------------------------------------------------------------');
         throw err;
       } else {
+        productModified = false;
         console.log('Fichier JSON MAJ');
       }
     });
@@ -241,4 +242,3 @@ const server = app.listen(process.env.PORT || 3000, function() {
     saveProduitsJSON();                                       // Tentative de sauvegarde périodique du Fichier-mémoire vers le fichier physique si témoin de modification = true
   }, refreshJSONFileInterval);
 });
-// easter
