@@ -4,7 +4,7 @@
 // *** Objet : srever.js                                              	 ***
 // ***                                                                   ***
 // *** Cet objet sert à gérer :                                          ***
-// ***   - Les éléments de bas niveau (BDD, Mails, UpLoader, Express...) ***
+// ***   - Les éléments de bas niveau (Express, les accès au fichier JSON)**
 // ***   - Les échanges avec les clients (API RestFull)         				 ***
 // ***                                                                   ***
 // ***  Nécessite :                                                      ***
@@ -83,7 +83,6 @@ app.post('/products', (req, res) => {
   if (indexProduit !== -1){
     return res.status(400).send('Le nouveau produit demandé existe déjà');
   }; 
-
 
   // Check validité de l'objet envoyé
   if (!validateProduct(req.body)){
